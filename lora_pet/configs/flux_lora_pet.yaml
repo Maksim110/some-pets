@@ -1,0 +1,66 @@
+project:
+  name: flux-lora-style-pet
+  seed: 42
+
+model:
+  # FLUX.1-dev is gated on Hugging Face. Accept the model terms and run `hf auth login`.
+  # For experimentation with lower friction, switch to black-forest-labs/FLUX.1-schnell.
+  base_model: black-forest-labs/FLUX.1-dev
+  torch_dtype: bfloat16
+
+data:
+  raw_dir: data/raw/subject
+  processed_dir: data/processed/subject
+  instance_dir: data/processed/subject/instance
+  resolution: 512
+  center_crop: true
+  min_size: 384
+  duplicate_hamming_threshold: 4
+  max_images: 24
+
+prompt:
+  token: mdvstyle
+  class_name: object
+  instance_prompt: a photo of mdvstyle object
+  validation_prompts:
+    - a photo of mdvstyle object on a clean studio background
+    - a photo of mdvstyle object on a wooden table, soft natural light
+    - a close-up photo of mdvstyle object with shallow depth of field
+
+training:
+  output_dir: outputs/flux_lora
+  trainer_script: third_party/diffusers/examples/dreambooth/train_dreambooth_lora_flux.py
+  mixed_precision: bf16
+  train_batch_size: 1
+  gradient_accumulation_steps: 4
+  max_train_steps: 300
+  learning_rate: 1.0
+  optimizer: prodigy
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  rank: 8
+  lora_alpha: 8
+  guidance_scale: 1.0
+  num_validation_images: 2
+  validation_epochs: 50
+  checkpointing_steps: 100
+  gradient_checkpointing: true
+  cache_latents: true
+  allow_tf32: true
+  use_8bit_adam: false
+  report_to: tensorboard
+  lora_layers: attn.to_k,attn.to_q,attn.to_v,attn.to_out.0
+
+inference:
+  lora_dir: outputs/flux_lora
+  adapter_name: pet_lora
+  adapter_weight: 0.8
+  output_dir: outputs/samples
+  num_inference_steps: 28
+  guidance_scale: 3.5
+  height: 768
+  width: 768
+  prompts:
+    - a photo of mdvstyle object in a minimal product photo scene
+    - a photo of mdvstyle object in cyberpunk neon lighting
+    - a photo of mdvstyle object as a magazine cover hero shot
